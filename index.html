@@ -1953,29 +1953,23 @@
         const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || (navigator.maxTouchPoints && navigator.maxTouchPoints > 0);
         const PHONE = '918209094155';
 
-        function buildWaUrl(name, msg, forMobile) {
-            const fullText = `💌 Blessing from ${name}:\n\n${msg}\n\n— Sent via Pratyush & Nikita's Wedding Invitation 🌸`;
-            const text = forMobile
-                ? `💌 Blessing from ${name}:\n\n${msg}\n\n— Pratyush & Nikita 💛`
-                : fullText;
+        function buildWaUrl(name, msg) {
+            // Use official api.whatsapp.com endpoint which behaves consistently
+            // across mobile and desktop for pre-filled messages.
+            const text = `💌 Blessing from ${name}:\n\n${msg}\n\n— Pratyush & Nikita 💛`;
             const encoded = encodeURIComponent(text);
-            if (forMobile) {
-                return `https://api.whatsapp.org/send?phone=${PHONE}&text=${encoded}`;
-            }
-            return `https://wa.me/${PHONE}?text=${encoded}`;
+            return `https://api.whatsapp.com/send?phone=${PHONE}&text=${encoded}`;
         }
 
         function updateWhatsAppLink() {
             const name = nameInput.value.trim();
             const msg = msgInput.value.trim();
             if (name && msg) {
-                waLinkElement.href = buildWaUrl(name, msg, false);
-                waLinkElement.dataset.waUrlMobile = buildWaUrl(name, msg, true);
+                waLinkElement.href = buildWaUrl(name, msg);
                 waLinkElement.style.pointerEvents = 'auto';
                 waLinkElement.style.opacity = '1';
             } else {
                 waLinkElement.removeAttribute('href');
-                waLinkElement.removeAttribute('data-wa-url-mobile');
                 waLinkElement.style.pointerEvents = 'none';
                 waLinkElement.style.opacity = '0.5';
             }
@@ -1993,23 +1987,11 @@
                 return;
             }
 
-            e.preventDefault();
+            // Let the <a> element's own navigation open WhatsApp.
+            // On mobile, WhatsApp controls the cursor in its own text box;
+            // here we only ensure the pre-filled text is in the URL.
             nameInput.blur();
             msgInput.blur();
-
-            // On mobile use api.whatsapp.org + shorter text so the pre-filled message
-            // actually appears in WhatsApp (wa.me can drop long text on some phones).
-            const waUrl = isMobile && waLinkElement.dataset.waUrlMobile
-                ? waLinkElement.dataset.waUrlMobile
-                : waLinkElement.href;
-
-            setTimeout(function () {
-                if (isMobile) {
-                    window.location.href = waUrl;
-                } else {
-                    window.open(waUrl, '_blank');
-                }
-            }, 250);
             
             // Add to the local "wall"
             sessionBlessings.push({ name, msg });
